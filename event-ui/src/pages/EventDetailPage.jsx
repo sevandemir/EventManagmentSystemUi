@@ -9,6 +9,9 @@ import {
     Alert,
     Divider,
     Paper,
+    Rating,
+    Stack,
+    TextField,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { eventService } from "../api/eventService";
@@ -33,6 +36,13 @@ const EventDetailPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    // Review states
+    const [reviews, setReviews] = useState([]);
+    const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
+    const [reviewError, setReviewError] = useState("");
+    const [reviewSuccess, setReviewSuccess] = useState(false);
+    const [submittingReview, setSubmittingReview] = useState(false);
+
     useEffect(() => {
         const fetch = async () => {
             try {
@@ -44,8 +54,33 @@ const EventDetailPage = () => {
                 setLoading(false);
             }
         };
+        const fetchReviews = async () => {
+            try {
+                const data = await eventService.getEventReviews(id);
+                setReviews(data);
+            } catch (err) {
+                console.error("Yorumlar yüklenemedi", err);
+            }
+        };
         fetch();
+        fetchReviews();
     }, [id]);
+
+    const handleSubmitReview = async () => {
+        setReviewError("");
+        setReviewSuccess(false);
+        setSubmittingReview(true);
+        try {
+            const addedReview = await eventService.addEventReview(id, newReview);
+            setReviews([addedReview, ...reviews]);
+            setNewReview({ rating: 5, comment: "" });
+            setReviewSuccess(true);
+        } catch (err) {
+            setReviewError(err.response?.data?.message || "Yorum eklenirken hata oluştu.");
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
 
     if (loading)
         return (
@@ -178,6 +213,69 @@ const EventDetailPage = () => {
                             </Typography>
                         </>
                     )}
+
+                    <Divider sx={{ my: 4 }} />
+
+                    {/* Yorumlar ve Değerlendirmeler */}
+                    <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                            Yorumlar & Değerlendirmeler ({reviews.length})
+                        </Typography>
+
+                        {/* Yorum Yapma Formu (Sadece ATTENDEE ve COMPLETED/tamamlanmış etkinlikler için) */}
+                        {user?.role === 'ATTENDEE' && event.eventStatus === 'COMPLETED' && (
+                            <Paper variant="outlined" sx={{ p: 3, mb: 4, borderRadius: "12px", bgcolor: "#fafafa" }}>
+                                <Typography variant="subtitle2" fontWeight={600} mb={2}>Deneyiminizi Paylaşın</Typography>
+                                <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
+                                    <Typography variant="body2">Puanınız:</Typography>
+                                    <Rating 
+                                        name="rating" 
+                                        value={newReview.rating} 
+                                        onChange={(_, val) => setNewReview({ ...newReview, rating: val })} 
+                                    />
+                                </Box>
+                                <TextField
+                                    fullWidth
+                                    multiline
+                                    rows={3}
+                                    placeholder="Etkinlik hakkında yorumunuzu yazın..."
+                                    value={newReview.comment}
+                                    onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                                    sx={{ mb: 2, bgcolor: "#fff" }}
+                                />
+                                {reviewError && <Alert severity="error" sx={{ mb: 2 }}>{reviewError}</Alert>}
+                                {reviewSuccess && <Alert severity="success" sx={{ mb: 2 }}>Yorumunuz başarıyla gönderildi!</Alert>}
+                                <Button 
+                                    variant="contained" 
+                                    onClick={handleSubmitReview}
+                                    disabled={submittingReview}
+                                    sx={{ background: "#e94560", textTransform: "none", borderRadius: "8px", "&:hover": { background: "#c73652" } }}
+                                >
+                                    {submittingReview ? "Gönderiliyor..." : "Yorumu Gönder"}
+                                </Button>
+                            </Paper>
+                        )}
+
+                        {/* Yorum Listesi */}
+                        {reviews.length === 0 ? (
+                            <Typography variant="body2" color="text.secondary">Bu etkinlik için henüz yorum yapılmamış.</Typography>
+                        ) : (
+                            <Stack spacing={2}>
+                                {reviews.map((r) => (
+                                    <Paper key={r.id} variant="outlined" sx={{ p: 3, borderRadius: "12px" }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
+                                            <Typography variant="subtitle2" fontWeight={600}>{r.attendeeName}</Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {new Date(r.createdAt).toLocaleDateString("tr-TR")}
+                                            </Typography>
+                                        </Box>
+                                        <Rating value={r.rating} readOnly size="small" sx={{ mb: 1 }} />
+                                        <Typography variant="body2" color="text.secondary">{r.comment}</Typography>
+                                    </Paper>
+                                ))}
+                            </Stack>
+                        )}
+                    </Box>
                 </Paper>
             </Container>
         </Box>

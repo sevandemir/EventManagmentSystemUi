@@ -13,9 +13,13 @@ import EventCard from "../components/EventCard";
 
 const EMPTY_FILTERS = {
     search: "",
-    categoryId: "",
+    categoryIds: [],
     startDate: "",
     endDate: "",
+    location: "",
+    minPrice: "",
+    maxPrice: "",
+    eventType: "",
 };
 
 const EventListPage = () => {
@@ -48,7 +52,11 @@ const EventListPage = () => {
         try {
             const data = await eventService.searchEvents({
                 search: appliedFilters.search || undefined,
-                categoryId: appliedFilters.categoryId || undefined,
+                categoryIds: appliedFilters.categoryIds.length > 0 ? appliedFilters.categoryIds : undefined,
+                location: appliedFilters.location || undefined,
+                minPrice: appliedFilters.minPrice || undefined,
+                maxPrice: appliedFilters.maxPrice || undefined,
+                eventType: appliedFilters.eventType || undefined,
                 startDate: appliedFilters.startDate
                     ? `${appliedFilters.startDate}T00:00:00`
                     : undefined,
@@ -88,8 +96,10 @@ const EventListPage = () => {
     };
 
     const hasActiveFilters =
-        appliedFilters.search || appliedFilters.categoryId ||
-        appliedFilters.startDate || appliedFilters.endDate;
+        appliedFilters.search || appliedFilters.categoryIds.length > 0 ||
+        appliedFilters.startDate || appliedFilters.endDate ||
+        appliedFilters.location || appliedFilters.minPrice ||
+        appliedFilters.maxPrice || appliedFilters.eventType;
 
     return (
         <Box sx={{ minHeight: "100vh", bgcolor: "#f8f9fc" }}>
@@ -150,11 +160,96 @@ const EventListPage = () => {
                         justifyContent: "center",
                     }}
                 >
-                    {/* Kategori */}
-                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                    {/* Kategori (Çoklu Seçim) */}
+                    <FormControl size="small" sx={{ minWidth: 180 }}>
                         <Select
-                            name="categoryId"
-                            value={filters.categoryId}
+                            multiple
+                            name="categoryIds"
+                            value={filters.categoryIds}
+                            onChange={handleFilterChange}
+                            displayEmpty
+                            renderValue={(selected) => {
+                                if (selected.length === 0) {
+                                    return <Typography sx={{ color: "rgba(0,0,0,0.5)", fontSize: "0.875rem" }}>Kategoriler</Typography>;
+                                }
+                                return categories
+                                    .filter((c) => selected.includes(c.id))
+                                    .map((c) => c.name)
+                                    .join(", ");
+                            }}
+                            sx={{
+                                bgcolor: "#fff",
+                                borderRadius: "10px",
+                                "& fieldset": { border: "none" },
+                            }}
+                        >
+                            {categories.map((c) => (
+                                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+
+                    {/* Şehir / Konum */}
+                    <TextField
+                        size="small"
+                        name="location"
+                        placeholder="Şehir / Konum"
+                        value={filters.location}
+                        onChange={handleFilterChange}
+                        sx={{
+                            bgcolor: "#fff",
+                            borderRadius: "10px",
+                            width: 140,
+                            "& .MuiOutlinedInput-root": {
+                                borderRadius: "10px",
+                                "& fieldset": { border: "none" },
+                            },
+                        }}
+                    />
+
+                    {/* Fiyat Min */}
+                    <TextField
+                        size="small"
+                        name="minPrice"
+                        type="number"
+                        placeholder="Min Fiyat"
+                        value={filters.minPrice}
+                        onChange={handleFilterChange}
+                        sx={{
+                            bgcolor: "#fff",
+                            borderRadius: "10px",
+                            width: 110,
+                            "& .MuiOutlinedInput-root": {
+                                borderRadius: "10px",
+                                "& fieldset": { border: "none" },
+                            },
+                        }}
+                    />
+
+                    {/* Fiyat Max */}
+                    <TextField
+                        size="small"
+                        name="maxPrice"
+                        type="number"
+                        placeholder="Max Fiyat"
+                        value={filters.maxPrice}
+                        onChange={handleFilterChange}
+                        sx={{
+                            bgcolor: "#fff",
+                            borderRadius: "10px",
+                            width: 110,
+                            "& .MuiOutlinedInput-root": {
+                                borderRadius: "10px",
+                                "& fieldset": { border: "none" },
+                            },
+                        }}
+                    />
+
+                    {/* Etkinlik Tipi */}
+                    <FormControl size="small" sx={{ minWidth: 130 }}>
+                        <Select
+                            name="eventType"
+                            value={filters.eventType}
                             onChange={handleFilterChange}
                             displayEmpty
                             sx={{
@@ -163,10 +258,10 @@ const EventListPage = () => {
                                 "& fieldset": { border: "none" },
                             }}
                         >
-                            <MenuItem value="">Tüm Kategoriler</MenuItem>
-                            {categories.map((c) => (
-                                <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
-                            ))}
+                            <MenuItem value="">Tip (Tümü)</MenuItem>
+                            <MenuItem value="ONLINE">Online</MenuItem>
+                            <MenuItem value="PHYSICAL">Fiziksel</MenuItem>
+                            <MenuItem value="HYBRID">Hibrit</MenuItem>
                         </Select>
                     </FormControl>
 
@@ -178,7 +273,6 @@ const EventListPage = () => {
                         value={filters.startDate}
                         onChange={handleFilterChange}
                         InputLabelProps={{ shrink: true }}
-                        placeholder="Başlangıç"
                         sx={{
                             bgcolor: "#fff",
                             borderRadius: "10px",
@@ -252,11 +346,31 @@ const EventListPage = () => {
                                   onDelete={() => { setAppliedFilters(f => ({ ...f, search: "" })); setFilters(f => ({ ...f, search: "" })); }}
                             />
                         )}
-                        {appliedFilters.categoryId && (
+                        {appliedFilters.categoryIds.length > 0 && (
                             <Chip
-                                label={`Kategori: ${categories.find(c => String(c.id) === String(appliedFilters.categoryId))?.name || ""}`}
+                                label={`Kategoriler: ${categories.filter(c => appliedFilters.categoryIds.includes(c.id)).map(c => c.name).join(", ")}`}
                                 size="small"
-                                onDelete={() => { setAppliedFilters(f => ({ ...f, categoryId: "" })); setFilters(f => ({ ...f, categoryId: "" })); }}
+                                onDelete={() => { setAppliedFilters(f => ({ ...f, categoryIds: [] })); setFilters(f => ({ ...f, categoryIds: [] })); }}
+                            />
+                        )}
+                        {appliedFilters.location && (
+                            <Chip label={`Konum: ${appliedFilters.location}`} size="small"
+                                  onDelete={() => { setAppliedFilters(f => ({ ...f, location: "" })); setFilters(f => ({ ...f, location: "" })); }}
+                            />
+                        )}
+                        {appliedFilters.minPrice && (
+                            <Chip label={`Min Fiyat: ${appliedFilters.minPrice} TL`} size="small"
+                                  onDelete={() => { setAppliedFilters(f => ({ ...f, minPrice: "" })); setFilters(f => ({ ...f, minPrice: "" })); }}
+                            />
+                        )}
+                        {appliedFilters.maxPrice && (
+                            <Chip label={`Max Fiyat: ${appliedFilters.maxPrice} TL`} size="small"
+                                  onDelete={() => { setAppliedFilters(f => ({ ...f, maxPrice: "" })); setFilters(f => ({ ...f, maxPrice: "" })); }}
+                            />
+                        )}
+                        {appliedFilters.eventType && (
+                            <Chip label={`Tip: ${appliedFilters.eventType}`} size="small"
+                                  onDelete={() => { setAppliedFilters(f => ({ ...f, eventType: "" })); setFilters(f => ({ ...f, eventType: "" })); }}
                             />
                         )}
                         {appliedFilters.startDate && (

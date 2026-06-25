@@ -8,16 +8,40 @@ export const eventService = {
     },
 
     // Arama + filtre + pagination (backend destekli)
-    searchEvents: async ({ search, categoryId, startDate, endDate, page = 0, size = 12 } = {}) => {
-        const params = {};
-        if (search) params.search = search;
-        if (categoryId) params.categoryId = categoryId;
-        if (startDate) params.startDate = startDate;
-        if (endDate) params.endDate = endDate;
-        params.page = page;
-        params.size = size;
+    searchEvents: async ({ search, categoryIds, startDate, endDate, location, minPrice, maxPrice, eventType, page = 0, size = 12 } = {}) => {
+        const queryParams = new URLSearchParams();
+        if (search) queryParams.append("search", search);
+        if (categoryIds && categoryIds.length > 0) {
+            categoryIds.forEach(id => queryParams.append("categoryIds", id));
+        }
+        if (location) queryParams.append("location", location);
+        if (minPrice !== undefined && minPrice !== "") queryParams.append("minPrice", minPrice);
+        if (maxPrice !== undefined && maxPrice !== "") queryParams.append("maxPrice", maxPrice);
+        if (eventType) queryParams.append("eventType", eventType);
+        if (startDate) queryParams.append("startDate", startDate);
+        if (endDate) queryParams.append("endDate", endDate);
+        queryParams.append("page", page);
+        queryParams.append("size", size);
 
-        const response = await api.get("/events/search", { params });
+        const response = await api.get(`/events/search?${queryParams.toString()}`);
+        return response.data;
+    },
+
+    // Etkinliğin yorumlarını getir
+    getEventReviews: async (id) => {
+        const response = await api.get(`/events/${id}/reviews`);
+        return response.data;
+    },
+
+    // Yorum ekle (Attendee)
+    addEventReview: async (id, reviewData) => {
+        const response = await api.post(`/events/${id}/reviews`, reviewData);
+        return response.data;
+    },
+
+    // Organizatör puanı getir
+    getOrganizerRating: async (organizerId) => {
+        const response = await api.get(`/organizers/${organizerId}/rating`);
         return response.data;
     },
 

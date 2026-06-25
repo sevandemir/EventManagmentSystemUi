@@ -9,13 +9,14 @@ export const authService = {
 
     login: async (identifier, password) => {
         const response = await api.post("/auth/login", { identifier, password });
-        const { token } = response.data;
+        const { accessToken, refreshToken } = response.data;
 
-        localStorage.setItem("token", token);
+        localStorage.setItem("token", accessToken); // Geriye dönük uyumluluk için token adı aynı kalabilir
+        localStorage.setItem("refreshToken", refreshToken);
 
         // Token'ı decode ederek kullanıcı bilgisini çıkar
         try {
-            const decoded = jwtDecode(token);
+            const decoded = jwtDecode(accessToken);
             const user = {
                 id: decoded.sub,
                 role: decoded.role || decoded.roles?.[0] || "",
@@ -23,14 +24,15 @@ export const authService = {
                 userName: decoded.userName || "",
             };
             localStorage.setItem("user", JSON.stringify(user));
-            return { token, user };
+            return { token: accessToken, user };
         } catch {
-            return { token, user: null };
+            return { token: accessToken, user: null };
         }
     },
 
     logout: () => {
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
     },
 
@@ -65,6 +67,7 @@ export const authService = {
         } catch {
             // Decode edilemiyorsa geçersiz token
             localStorage.removeItem("token");
+            localStorage.removeItem("refreshToken");
             localStorage.removeItem("user");
             return false;
         }

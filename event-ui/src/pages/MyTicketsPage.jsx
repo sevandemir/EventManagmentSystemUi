@@ -219,6 +219,27 @@ const MyTicketsPage = () => {
                     </Typography>
                 )}
 
+                {/* Değerlendir Butonu */}
+                {reg.eventStatus === "COMPLETED" && reg.checkedIn && (
+                    <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
+                        <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => navigate(`/events/${reg.eventId}`)}
+                            sx={{
+                                textTransform: "none",
+                                fontSize: "0.8rem",
+                                borderRadius: "8px",
+                                background: "#059669",
+                                color: "#fff",
+                                "&:hover": { background: "#047857" }
+                            }}
+                        >
+                            Etkinliği Değerlendir & Yorum Yap
+                        </Button>
+                    </Box>
+                )}
+
                 {/* İptal butonu */}
                 {isCancellable && (
                     <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>

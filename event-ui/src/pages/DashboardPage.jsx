@@ -29,6 +29,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { eventService } from "../api/eventService";
 import { registrationService } from "../api/registrationService";
+import { reportService } from "../api/reportService";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -37,6 +38,7 @@ import PublishIcon from "@mui/icons-material/Publish";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 import PeopleIcon from "@mui/icons-material/People";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
+import DownloadIcon from "@mui/icons-material/Download";
 import TicketTierModal from "../components/TicketTierModal";
 
 const STATUS_COLORS = {
@@ -136,6 +138,15 @@ const DashboardPage = () => {
             setAttendeesError(err.response?.data?.message || "Katılımcılar yüklenemedi.");
         } finally {
             setAttendeesLoading(false);
+        }
+    };
+
+    const handleExportCsv = async (eventId) => {
+        try {
+            await reportService.exportEventRegistrationsCsv(eventId);
+        } catch (err) {
+            console.error("CSV indirme hatası:", err);
+            alert("Rapor indirilirken hata oluştu.");
         }
     };
 
@@ -391,9 +402,23 @@ const DashboardPage = () => {
                 PaperProps={{ sx: { borderRadius: "16px" } }}
             >
                 <DialogTitle sx={{ fontWeight: 700, pb: 0 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <PeopleIcon sx={{ color: "#059669" }} />
-                        Katılımcı Listesi
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <PeopleIcon sx={{ color: "#059669" }} />
+                            Katılımcı Listesi
+                        </Box>
+                        {!attendeesLoading && attendees.length > 0 && (
+                            <Button
+                                variant="outlined"
+                                color="success"
+                                size="small"
+                                startIcon={<DownloadIcon />}
+                                onClick={() => handleExportCsv(attendeesModal.event.id)}
+                                sx={{ textTransform: "none", borderRadius: "8px", fontWeight: 600 }}
+                            >
+                                CSV Raporu İndir
+                            </Button>
+                        )}
                     </Box>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontWeight: 400 }}>
                         {attendeesModal.event?.title}

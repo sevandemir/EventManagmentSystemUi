@@ -34,6 +34,15 @@ export const registrationService = {
     },
 
     /**
+     * Güvenli check-in bilet detay sorgulama.
+     * Rol: ORGANIZER, ADMIN
+     */
+    getRegistrationDetailsForCheckIn: async (qrCodeUuid) => {
+        const response = await api.get(`/registrations/check-in/details/${qrCodeUuid}`);
+        return response.data;
+    },
+
+    /**
      * Giriş yapan kullanıcının kayıtları.
      * Rol: ATTENDEE
      */
